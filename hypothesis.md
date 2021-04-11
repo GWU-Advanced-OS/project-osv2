@@ -4,9 +4,13 @@
 
 # Question from our own
 1.How does OSv implement system calls, thus avoiding traditional linux system call overheads? 
+
 2.How does OSv manage memory becuase it only has a single memory space? 
+
 3.How does OSv support multiple threads, or scheduling between threads? 
+
 4.Give a explanation of the lock scheme of OSv.
+
 5.How does OSv support network stack?
  
 # Question from project requirement  
