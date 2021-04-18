@@ -12,7 +12,7 @@
 
 4.Give a explanation of the lock scheme of OSv.
 
-5.How does OSv support network stack?
+5.How does OSv support network stack, thus optimizing it?
  
 # Question from project requirement  
 1. Summarize the project, what it is, what its goals are, and why it exists.
