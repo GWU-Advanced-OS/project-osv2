@@ -112,3 +112,16 @@ These three reasons make it inefficient process network packets. In order to pro
         ...
     }
     ```
+
+
+# Answer to questions
+- What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
+
+    The system consists of different components (modules), including Virtual hardware drivers, Filesystem,   Network stack, Thread scheduler, etc. The boundaries is clear among these components since each component has its own specific functionality and generally does not rely on other components’ design and implementation. For example, the thread module provides thread abstraction, and the virtual hardware driver focuses on abstractions of different hardware, like NICs and disks, they have little in common. However, hierarchy relations also exist in the system. The virtual hardware drivers needs to provide interfaces for some upper components. For example, disk drivers provides interfaces for the filesystem to read/write to virtual disks and the communication is direct calls to interfaces. Direct calls means the operations will be very fast, thus good performance.
+- What are the core abstractions that the system aims to provide. How and why do they depart from other systems?
+
+    We think the core abstraction of OSv is to provide a VM based application with a strong isolation, as talked in the overview part. OSv is different from Linux as it does not support process, thus it can nearly be viewed as a single application. It is also different from other hardware based unikernels because those kernels cannot provide strong isolation and have problems of dealing with kinds of device drivers. OSv only needs to support limited number of drivers and because it is within a VM, strong isolation is naturally guaranteed.
+
+- In what conditions is the performance of the system "good" and in which is it "bad"? How does its performance compare to a Linux baseline (this discussion can be quantitative or qualitative)?
+
+    The system should be in good performance when dealing with tasks that has frequent Linux system calls and heavy networking, because, first, it removes the heavy system calls in Linux and replaces them with direct function calls, thus applications that rely on this gain a lot; second, network stack in OSv is much more simplified as we have discussed above, so applications like microservices should gain performance. The benchmark using Memcached support this idea, as it shows that "OSv was able to handle about 20% more requests per second than the same memcached version on Linux". The system performs not good in applications with heavy disk I/O operations compared with Linux  because the coarse-grained locking in VFS could lock the vnode for a long time.
