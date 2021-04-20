@@ -15,7 +15,7 @@ Disadvantages also exist in OSv. First, it is not easy to deploy complex systems
 
 # Components of OSv
 
-## Memory and Thread
+## Memory
 The memory management in the OSv follows the POSIX-like APIs which can map and
 unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single ap-
 plication and only has one single memory space, it does not support memory eviction.
@@ -29,34 +29,42 @@ and unikernel[2].
     
 The single memory space can help improve the efficiency of the scheduler since it means
 the context switch does not need to switch the page table and flush TLB.
--Implementation
-```C++
-struct page_allocator {
-    virtual bool map(uintptr_t offset, hw_ptep<0> ptep, pt_element<0> pte, bool write) = 0;
-    virtual bool map(uintptr_t offset, hw_ptep<1> ptep, pt_element<1> pte, bool write) = 0;
-    virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<0> ptep) = 0;
-    virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<1> ptep) = 0;
-    virtual ~page_allocator() {}
-};
-```
-```C++
-void flush_tlb_all()
-{
-    static std::vector<sched::cpu*> ipis(sched::max_cpus);
+    - Implementation
+  
+    ```C++
+    struct page_allocator {
+        virtual bool map(uintptr_t offset, hw_ptep<0> ptep, pt_element<0> pte, bool write) = 0;
+        virtual bool map(uintptr_t offset, hw_ptep<1> ptep, pt_element<1> pte, bool write) = 0;
+        virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<0> ptep) = 0;
+        virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<1> ptep) = 0;
+        virtual ~page_allocator() {}
+    };
+    ```
+    ```C++
+    void flush_tlb_all()
+    {
+        static std::vector<sched::cpu*> ipis(sched::max_cpus);
 
-    if (sched::cpus.size() <= 1) {
+        if (sched::cpus.size() <= 1) {
+            mmu::flush_tlb_local();
+            return;
+        }
+
+        SCOPE_LOCK(migration_lock);
         mmu::flush_tlb_local();
-        return;
+        std::lock_guard<mutex> guard(tlb_flush_mutex);
+        tlb_flush_waiter.reset(*sched::thread::current());
+        ...
+        tlb_flush_waiter.clear();
     }
+    ```
+    
+## Thread
+The design principles of OSv thread scheduling include 6 points: lock-free，preemptive，tick-less，fair，scalable and efficient.
+- Lock-free
 
-    SCOPE_LOCK(migration_lock);
-    mmu::flush_tlb_local();
-    std::lock_guard<mutex> guard(tlb_flush_mutex);
-    tlb_flush_waiter.reset(*sched::thread::current());
-    ...
-    tlb_flush_waiter.clear();
-}
-```
+    The spin-lock is widely used in modern OS; however, when the spin-lock is implemented in the VM, it will lead to the 'lock-holder preemption' problem: while physical CPUs are always running if the OS wants them to, virtual CPUs may “pause” at unknown times for unknown durations[1]. If a virtual CPU is suspended while holding a spin lock, other CPUs that want to acquire the lock need to perform spin operations (spin) unnecessarily, which wastes CPU time. Similarly, for mutexes that use the spin method, the thread without lock will spin continuously and waste CPU time. Experiments show that this will bring about 7% to 99% (extreme case) performance loss[3].
+    To solve this, OSv gives up the spin-locks and the sleeping mutex. In OSv, each CPU keeps a run-queue which lists all the runnable threads and use lock-free algorithm to implement mutex lock. Besides, to balance work-load, each CPU will have a load balancer thread.
 ## File system
 
 ## Network
@@ -163,7 +171,9 @@ Philadelphia, PA, June 2014. USENIX Association.
 containers: An in-depth benchmarking study in the context of microservice applica-
 tions. In2018 IEEE 8th International Symposium on Cloud and Service Computing
 (SC2), pages 1–8, 2018.
-
+[3] FRIEBEL, T., AND BIEMUELLER, S. How to deal with
+lock holder preemption. Xen Summit North America
+(2008).
 
 # Answer to questions
 - What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
