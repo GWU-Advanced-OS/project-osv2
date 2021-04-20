@@ -24,8 +24,8 @@ by using the mechanism similar to Linux’s Transparent Huge Pages[1]. In the Un
 nel, the user and kernel share the same kernel space which means the user and kernel use
 the same `malloc()` function. Here is the architecture comparison of the VM, container,
 and unikernel[2].
-    ![picture-1](resources/Pic1.png?raw=true)
-    <center>Figure 1</center>
+    ![Mem-Pic1](resources/Pic1.png?raw=true)
+    <center></center>
     
 The single memory space can help improve the efficiency of the scheduler since it means
 the context switch does not need to switch the page table and flush TLB.
@@ -132,15 +132,11 @@ and Vlad Zolotarov. Osv—optimizing the operating system for virtual machines.
 In 2014 USENIX Annual Technical Conference (USENIX ATC 14), pages 61–72,
 Philadelphia, PA, June 2014. USENIX Association.
 
-### 1
-
-
 [2] T. Goethals, M. Sebrechts, A. Atrey, B. Volckaert, and F. De Turck. Unikernels vs
 containers: An in-depth benchmarking study in the context of microservice applica-
 tions. In2018 IEEE 8th International Symposium on Cloud and Service Computing
 (SC2), pages 1–8, 2018.
 
-### 2
 
 # Answer to questions
 - What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
