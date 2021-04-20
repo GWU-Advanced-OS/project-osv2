@@ -416,9 +416,16 @@ Philadelphia, PA, June 2014. USENIX Association.
 containers: An in-depth benchmarking study in the context of microservice applica-
 tions. In2018 IEEE 8th International Symposium on Cloud and Service Computing
 (SC2), pages 1–8, 2018.
+
 [3] FRIEBEL, T., AND BIEMUELLER, S. How to deal with
 lock holder preemption. Xen Summit North America
 (2008).
+
+[4] https://en.wikipedia.org/wiki/Unikernel
+
+[5] https://lwn.net/Articles/169961/
+
+[6] http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf
 
 # Answer to questions
 - What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
