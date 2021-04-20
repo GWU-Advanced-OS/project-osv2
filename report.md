@@ -222,6 +222,96 @@ The design principles of OSv thread scheduling include 6 points: lock-free，pre
     
 ## File system
 
+Quote on quote, in their paper it says, “For its filesystem support, OSv follows a traditional UNIX-like VFS (virtual filesystem) design and adopts ZFS as its major filesystem.”. However, as a group of students who barely knows what a virtual filesystem is before this semester, it still worth diving into the code and understanding all underlying code logic. 
+
+### VFS
+The virtual filesystem codes themselves are located at `fs/vfs`. To begin, let's dive into `vfs.h` first. Here is a brief look of the header file.
+
+``` C++
+int	 sys_open(char *path, int flags, mode_t mode, struct file **fp);
+int	 sys_read(struct file *fp, const struct iovec *iov, size_t niov,
+		off_t offset, size_t *count);
+int	 sys_write(struct file *fp, const struct iovec *iov, size_t niov,
+		off_t offset, size_t *count);
+int	 sys_lseek(struct file *fp, off_t off, int type, off_t * cur_off);
+```
+
+Those functions cannot be more familiar to any Computer Science student. They are not interesting and no strangers, programmers use them day and night. Nearly identical functions exist in Unix system. Now, one step further, let us jump over to `vfs_syscalls.cc` and see `sys_mknod` as another example. 
+
+``` C++
+int
+sys_mknod(char *path, mode_t mode)
+{
+	char *name;
+	struct dentry *dp, *ddp;
+	int error;
+
+	... // Skip some unintersting code seg
+
+	vn_lock(ddp->d_vnode);
+	if ((error = vn_access(ddp->d_vnode, VWRITE)) != 0)
+		goto out;
+	if (S_ISDIR(mode))
+		error = VOP_MKDIR(ddp->d_vnode, name, mode);
+	else
+		error = VOP_CREATE(ddp->d_vnode, name, mode);
+ out:
+	vn_unlock(ddp->d_vnode);
+	drele(ddp);
+	return error;
+}
+```
+
+Now, we can see it seems like actual operation of sys_mknod is done through calling the macro `VOP_MKDIR` and ` VOP_CREATE` which located in `include/osv/vnode.h` depends on the mode. 
+
+``` C++
+#define VOP_CREATE(DVP, N, M) ((DVP)->v_op->vop_create)(DVP, N, M)
+#define VOP_MKDIR(DVP, N, M) ((DVP)->v_op->vop_mkdir)(DVP, N, M)
+```
+
+By the numbers of arrows in this macro and the placement of parentheses, any programmer can tell this defines a function pointer as macro. Function pointer, as its name, is a pointer to the function and it enables polymorphism in programming. In other words, OSv can have different underlying filesystem support which the same VFS API layer on top. The system can be configurated to support different filesystem without any major changes in code and having a consistent API design.
+However, this isn’t new, as the quote at the beginning of this paragraphs says, UNIX has this design, it is a traditional design. 
+
+Let’s try harder and see is other any other interesting things can be found under `fs/`
+
+```
+fs/sysfs
+fs/pseudofs 
+fs/virtiofs
+fs/ramfs
+fs/rofs
+```
+`sysfs` and `pseudofs` aren’t so interesting, if you are a daily Linux user, you should be familiar with them, so does the `devfs`. Those pseudofs exposing either physical devices or system components as files so users can better interact with them. 
+
+`ramfs` is another boring part, using memory devices to simulate a blockdev is very simple. It can be done by just using an array. Providing a full feature filesystem on top is not much harder if there is a proper data structure design. Here are some parts of their code. It does not worth spending time talking about. 
+
+ ``` C++
+    np = (ramfs_node *) malloc(sizeof(struct ramfs_node));
+
+    uint64_t file_offset = uio->uio_offset;
+    for (; segment_to_read_or_write != file_segments_by_offset.end() && bytes_to_read_or_write > 0; segment_to_read_or_write++) {
+        // First calculate where we need to start in this segment ...
+        auto offset_in_segment = file_offset - segment_to_read_or_write->first;
+        // .. then calculate how many bytes to read or write in this segment
+        auto maximum_bytes_to_read_or_write_in_segment = segment_to_read_or_write->second.size - offset_in_segment;
+        auto bytes_to_read_or_write_in_segment = std::min<uint64_t>(bytes_to_read_or_write,maximum_bytes_to_read_or_write_in_segment);
+        assert(offset_in_segment >= 0 && offset_in_segment < segment_to_read_or_write->second.size);
+        auto ret = uiomove(segment_to_read_or_write->second.data + offset_in_segment, bytes_to_read_or_write_in_segment, uio);
+        if (ret) {
+            return ret;
+        }
+        bytes_to_read_or_write -= bytes_to_read_or_write_in_segment;
+        file_offset += bytes_to_read_or_write_in_segment;
+    }
+
+```
+
+`virtiofs` does capture our eyeballs. For those who have never heard of it, `virtio` is a virtualization standard for network and disk device drivers where just the guest's device driver "knows" it is running in a virtual environment, and cooperates with the hypervisor [x]. In short, `virtio` enabling faster data exchange and interaction between host and guest. This is very useful when you need to transfer huge amount of data or many invocations between host and guest. In OSv, they implement `virtiofs` by using FUSE (Filesystem in Userspace) to enabling data exchange between host and guest (ref)[https://github.com/cloudius-systems/osv/commit/bae4381d1d0558b7a684294e9203864f9652395c#diff-8d4a85b0cc195b35a41f49935fab84f00bc38e5e6b62ded8e1340dd6611fc801].
+
+Thus, the filesystem part of OSv is boring because there is nearly no novel techniques being applied. They did implement some handy features based on modern techniques such as virtio but only in a small portion. 
+
+
+
 ## Network
 
 ### Problems of traditional network stack
