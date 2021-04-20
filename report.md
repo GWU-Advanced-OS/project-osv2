@@ -80,32 +80,32 @@ The design principles of OSv thread scheduling include 6 points: lock-free，pre
     }
     ```
     ```C++
-void cpu::load_balance()
-{
-    notifier::fire();
-    timer tmr(*thread::current());
-    while (true) {
-        tmr.set(osv::clock::uptime::now() + 100_ms);
-        thread::wait_until([&] { return tmr.expired(); });
-        if (runqueue.empty()) {
-            continue;
-        }
-        auto min = *std::min_element(cpus.begin(), cpus.end(),
-                [](cpu* c1, cpu* c2) { return c1->load() < c2->load(); });
-        if (min == this) {
-            continue;
-        }
-        // This CPU is temporarily running one extra thread (this thread),
-        // so don't migrate a thread away if the difference is only 1.
-        if (min->load() >= (load() - 1)) {
-            continue;
-        }
-        WITH_LOCK(irq_lock) {
-        ...
+    void cpu::load_balance()
+    {
+        notifier::fire();
+        timer tmr(*thread::current());
+        while (true) {
+            tmr.set(osv::clock::uptime::now() + 100_ms);
+            thread::wait_until([&] { return tmr.expired(); });
+            if (runqueue.empty()) {
+                continue;
+            }
+            auto min = *std::min_element(cpus.begin(), cpus.end(),
+                    [](cpu* c1, cpu* c2) { return c1->load() < c2->load(); });
+            if (min == this) {
+                continue;
+            }
+            // This CPU is temporarily running one extra thread (this thread),
+            // so don't migrate a thread away if the difference is only 1.
+            if (min->load() >= (load() - 1)) {
+                continue;
+            }
+            WITH_LOCK(irq_lock) {
+                ...
+            }
         }
     }
-}
-```
+    ```
 
 ## File system
 
