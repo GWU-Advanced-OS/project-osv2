@@ -159,7 +159,7 @@ The design principles of OSv thread scheduling include 6 points: lock-free，pre
         _cputime_estimator.store(rs | ((u64)tc << 32), std::memory_order_relaxed);
     }
     ```
-- fair
+- Fair
 
     The OSv scheduler calculates the exponential decay moving average of the recent running time of each thread. The scheduler selects the thread with the lowest moving average as the thread to run next, and calculates the running time to ensure that the running time of the next thread is not exceeded.
     
