@@ -65,7 +65,48 @@ The design principles of OSv thread scheduling include 6 points: lock-free，pre
 - Lock-free
 
     The spin-lock is widely used in modern OS; however, when the spin-lock is implemented in the VM, it will lead to the 'lock-holder preemption' problem: while physical CPUs are always running if the OS wants them to, virtual CPUs may “pause” at unknown times for unknown durations[1]. If a virtual CPU is suspended while holding a spin lock, other CPUs that want to acquire the lock need to perform spin operations (spin) unnecessarily, which wastes CPU time. Similarly, for mutexes that use the spin method, the thread without lock will spin continuously and waste CPU time. Experiments show that this will bring about 7% to 99% (extreme case) performance loss[3].
+    
     To solve this, OSv gives up the spin-locks and the sleeping mutex. In OSv, each CPU keeps a run-queue which lists all the runnable threads and use lock-free algorithm to implement mutex lock. Besides, to balance work-load, each CPU will have a load balancer thread.
+    
+- Implementaion
+
+     ```C++
+    void cpu::init_idle_thread()
+    {
+        running_since = osv::clock::uptime::now();
+        std::string name = osv::sprintf("idle%d", id);
+        idle_thread = thread::make([this] { idle(); }, thread::attr().pin(this).name(name));
+        idle_thread->set_priority(thread::priority_idle);
+    }
+    ```
+    ```C++
+void cpu::load_balance()
+{
+    notifier::fire();
+    timer tmr(*thread::current());
+    while (true) {
+        tmr.set(osv::clock::uptime::now() + 100_ms);
+        thread::wait_until([&] { return tmr.expired(); });
+        if (runqueue.empty()) {
+            continue;
+        }
+        auto min = *std::min_element(cpus.begin(), cpus.end(),
+                [](cpu* c1, cpu* c2) { return c1->load() < c2->load(); });
+        if (min == this) {
+            continue;
+        }
+        // This CPU is temporarily running one extra thread (this thread),
+        // so don't migrate a thread away if the difference is only 1.
+        if (min->load() >= (load() - 1)) {
+            continue;
+        }
+        WITH_LOCK(irq_lock) {
+        ...
+        }
+    }
+}
+```
+
 ## File system
 
 ## Network
