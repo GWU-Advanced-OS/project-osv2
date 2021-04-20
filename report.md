@@ -29,7 +29,34 @@ and unikernel[2].
     
 The single memory space can help improve the efficiency of the scheduler since it means
 the context switch does not need to switch the page table and flush TLB.
+-Implementation
+```C++
+struct page_allocator {
+    virtual bool map(uintptr_t offset, hw_ptep<0> ptep, pt_element<0> pte, bool write) = 0;
+    virtual bool map(uintptr_t offset, hw_ptep<1> ptep, pt_element<1> pte, bool write) = 0;
+    virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<0> ptep) = 0;
+    virtual bool unmap(void *addr, uintptr_t offset, hw_ptep<1> ptep) = 0;
+    virtual ~page_allocator() {}
+};
+```
+```C++
+void flush_tlb_all()
+{
+    static std::vector<sched::cpu*> ipis(sched::max_cpus);
 
+    if (sched::cpus.size() <= 1) {
+        mmu::flush_tlb_local();
+        return;
+    }
+
+    SCOPE_LOCK(migration_lock);
+    mmu::flush_tlb_local();
+    std::lock_guard<mutex> guard(tlb_flush_mutex);
+    tlb_flush_waiter.reset(*sched::thread::current());
+    ...
+    tlb_flush_waiter.clear();
+}
+```
 ## File system
 
 ## Network
