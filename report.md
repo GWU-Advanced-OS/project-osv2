@@ -438,3 +438,11 @@ lock holder preemption. Xen Summit North America
 - In what conditions is the performance of the system "good" and in which is it "bad"? How does its performance compare to a Linux baseline (this discussion can be quantitative or qualitative)?
 
     The system should be in good performance when dealing with tasks that has frequent Linux system calls and heavy networking, because, first, it removes the heavy system calls in Linux and replaces them with direct function calls, thus applications that rely on this gain a lot; second, network stack in OSv is much more simplified as we have discussed above, so applications like microservices should gain performance. The benchmark using Memcached support this idea, as it shows that "OSv was able to handle about 20% more requests per second than the same memcached version on Linux". The system performs not good in applications with heavy disk I/O operations compared with Linux  because the coarse-grained locking in VFS could lock the vnode for a long time.
+
+# Contribution
+
+Memory & Thread : 
+
+Filesystem :
+
+Network : Xinyu Han
