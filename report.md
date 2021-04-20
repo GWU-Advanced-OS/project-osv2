@@ -106,7 +106,120 @@ The design principles of OSv thread scheduling include 6 points: lock-free，pre
         }
     }
     ```
+- Preemptive
 
+    OSv fully supports preemptive thread scheduling: threads can automatically cause thread scheduling by waiting, yielding or waking up other threads, or they can be preempted by other interrupts at any time. The thread can also temporarily avoid being preempted by increasing the preempt-disable counter.
+   
+- Implementaion 
+
+    ```C++
+    void thread::yield(thread_runtime::duration preempt_after)
+    {
+        trace_sched_yield();
+        auto t = current();
+        std::lock_guard<irq_lock_type> guard(irq_lock);
+        // FIXME: drive by IPI
+        cpu::current()->handle_incoming_wakeups();
+        // FIXME: what about other cpus?
+        if (cpu::current()->runqueue.empty()) {
+            return;
+        }
+        assert(t->_detached_state->st.load() == status::running);
+        // Do not yield to a thread with idle priority
+        thread &tnext = *(cpu::current()->runqueue.begin());
+        if (tnext.priority() == thread::priority_idle) {
+            return;
+        }
+        trace_sched_yield_switch();
+        ...
+    }
+    ```
+    ```C++
+    void thread::wait()
+    {
+        trace_sched_wait();
+        cpu::schedule();
+        trace_sched_wait_ret();
+    }
+    ```
+- Tick-less
+ 
+    Most of the OS kernel use a periodic timer interrupt, also known as tick which periodically causes thread scheduling, such as 100 times per second, the kernel determines the next scheduling by counting the execution time of each thread in each cycle[1]. However, excessive Tick wastes CPU time, especially on VM whose interrupt response is significantly slower than that on physical machines, because the virtual machine interrupts need to exit the hypervisor for execution. 
+    OSv is designed to implement a tickless method: the scheduler uses a high-precision clock to calculate the accurate execution time of each thread, instead of roughly estimating the execution time by tick. In addition, the thread scheduler uses hysteresis to avoid frequent switch scheduling between two busy threads.
+    
+- Implementaion 
+
+    ```C++
+    void thread::cputime_estimator_set(
+        osv::clock::uptime::time_point running_since,
+        osv::clock::uptime::duration total_cpu_time)
+    {
+        u32 rs = running_since.time_since_epoch().count() >> cputime_shift;
+        u32 tc = total_cpu_time.count() >> cputime_shift;
+        _cputime_estimator.store(rs | ((u64)tc << 32), std::memory_order_relaxed);
+    }
+    ```
+- fair
+
+    The OSv scheduler calculates the exponential decay moving average of the recent running time of each thread. The scheduler selects the thread with the lowest moving average as the thread to run next, and calculates the running time to ensure that the running time of the next thread is not exceeded.
+    
+- Implementaion
+
+    ```C++
+    void cpu::reschedule_from_interrupt(bool called_from_yield,
+                                    thread_runtime::duration preempt_after)
+    {
+        #endif
+            trace_sched_sched();
+            assert(sched::exception_depth <= 1);
+            need_reschedule = false;
+            handle_incoming_wakeups();
+
+        auto now = osv::clock::uptime::now();
+        auto interval = now - running_since;
+        running_since = now;
+        if (interval <= 0) {
+            // During startup, the clock may be stuck and we get zero intervals.
+            // To avoid scheduler loops, let's make it non-zero.
+            // Also ignore backward jumps in the clock.
+            interval = context_switch_penalty;
+        }
+        thread* p = thread::current();
+
+        const auto p_status = p->_detached_state->st.load();
+        assert(p_status != thread::status::queued);
+
+        p->_total_cpu_time += interval;
+        p->_runtime.ran_for(interval);
+
+        if (p_status == thread::status::running) {
+            // The current thread is still runnable. Check if it still has the
+            // lowest runtime, and update the timer until the next thread's turn.
+        ...
+        } else {
+            // p is no longer running, so we'll switch to a different thread.
+            // Return the runtime p borrowed for hysteresis.
+            p->_runtime.hysteresis_run_stop();
+        }
+
+        auto ni = runqueue.begin();
+        auto n = &*ni;
+        runqueue.erase(ni);
+        n->cputime_estimator_set(now, n->_total_cpu_time);
+        assert(n->_detached_state->st.load() == thread::status::queued);
+        trace_sched_switch(n, p->_runtime.get_local(), n->_runtime.get_local());
+
+        ...
+    }
+    ```
+- Scalable
+    
+    The time complexity of the OSv scheduler to maintain each CPU running thread queue is O(lgN): it is implemented by sorting the heap thread queue according to the thread moving average running time. Since the calculation of moving average time requires floating-point operations, the biggest obstacle is scalability. It is impractical for the scheduler to update the moving average running time of all threads each time, so the scheduler only updates the running time of one thread at a time[1].
+    
+- Efficient
+    
+    OSv single address space feature helps to improve the efficiency because the switch context does not need to switch page table and flush TLB which saves the cost. Besides, the x86 64 ABI guarantees that the FPU registers are caller-saved. So for voluntary context switches, OSv can skip saving the FPU state[1]. It reduces the cost of saving FPU register when doing swith context.
+    
 ## File system
 
 ## Network
