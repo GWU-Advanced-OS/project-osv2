@@ -16,6 +16,17 @@ Disadvantages also exist in OSv. First, it is not easy to deploy complex systems
 # Components of OSv
 
 ## Memory and Thread
+The memory management in the OSv follows the POSIX-like APIs which can map and
+unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single ap-
+plication and only has one single memory space, it does not support memory eviction.
+However, it supports large memory allocation and can break the large page into smaller pages
+by using the mechanism similar to Linux’s Transparent Huge Pages[1]. In the Uniker-
+nel, the user and kernel share the same kernel space which means the user and kernel use
+the same malloc() function. Here is the architecture comparison of the VM, container,
+and unikernel[2].
+
+The single memory space can help improve the efficiency of the scheduler since it means
+the context switch does not need to switch the page table and flush TLB.
 
 ## File system
 
@@ -112,7 +123,22 @@ These three reasons make it inefficient process network packets. In order to pro
         ...
     }
     ```
+## References
 
+[1] Avi Kivity, Dor Laor, Glauber Costa, Pekka Enberg, Nadav Har’El, Don Marti,
+and Vlad Zolotarov. Osv—optimizing the operating system for virtual machines.
+In 2014 USENIX Annual Technical Conference (USENIX ATC 14), pages 61–72,
+Philadelphia, PA, June 2014. USENIX Association.
+
+### 1
+
+
+[2] T. Goethals, M. Sebrechts, A. Atrey, B. Volckaert, and F. De Turck. Unikernels vs
+containers: An in-depth benchmarking study in the context of microservice applica-
+tions. In2018 IEEE 8th International Symposium on Cloud and Service Computing
+(SC2), pages 1–8, 2018.
+
+### 2
 
 # Answer to questions
 - What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
