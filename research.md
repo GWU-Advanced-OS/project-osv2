@@ -388,3 +388,24 @@ These three reasons make it inefficient process network packets. In order to pro
         ...
     }
     ```
+## References
+
+[1] Avi Kivity, Dor Laor, Glauber Costa, Pekka Enberg, Nadav Har’El, Don Marti,
+and Vlad Zolotarov. Osv—optimizing the operating system for virtual machines.
+In 2014 USENIX Annual Technical Conference (USENIX ATC 14), pages 61–72,
+Philadelphia, PA, June 2014. USENIX Association.
+
+[2] T. Goethals, M. Sebrechts, A. Atrey, B. Volckaert, and F. De Turck. Unikernels vs
+containers: An in-depth benchmarking study in the context of microservice applica-
+tions. In2018 IEEE 8th International Symposium on Cloud and Service Computing
+(SC2), pages 1–8, 2018.
+
+[3] FRIEBEL, T., AND BIEMUELLER, S. How to deal with
+lock holder preemption. Xen Summit North America
+(2008).
+
+[4] https://en.wikipedia.org/wiki/Unikernel
+
+[5] https://lwn.net/Articles/169961/
+
+[6] http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf
