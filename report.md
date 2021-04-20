@@ -29,7 +29,8 @@ and unikernel[2].
     
 The single memory space can help improve the efficiency of the scheduler since it means
 the context switch does not need to switch the page table and flush TLB.
-    - Implementation
+
+- Implementation
   
     ```C++
     struct page_allocator {
