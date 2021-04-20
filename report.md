@@ -22,9 +22,11 @@ plication and only has one single memory space, it does not support memory evict
 However, it supports large memory allocation and can break the large page into smaller pages
 by using the mechanism similar to Linux’s Transparent Huge Pages[1]. In the Uniker-
 nel, the user and kernel share the same kernel space which means the user and kernel use
-the same malloc() function. Here is the architecture comparison of the VM, container,
+the same `malloc()` function. Here is the architecture comparison of the VM, container,
 and unikernel[2].
-
+    ![picture-1](resources/Pic1.png?raw=true)
+    <center>Figure 1</center>
+    
 The single memory space can help improve the efficiency of the scheduler since it means
 the context switch does not need to switch the page table and flush TLB.
 
