@@ -457,6 +457,8 @@ lock holder preemption. Xen Summit North America
 	![Pic3](resources/Pic3.png?raw=true)
     	<center></center>
 	
+	In a real environment, hardware operations usually return in nanoseconds, while virtual hardware operations usually return in millimeters. In addition, due to the hypervisor's scheduling of VCPUs, the delay between instructions may be unpredictably large. In response to this, OSv avoids the use of spin locks, etc., and uses non-blocking, lock-free algorithms, and sleeping mutexes to ensure that CPU time is not wasted. At the same time, try to perform time-consuming operations in a virtualized environment.
+	
 	Besides, the OSv optimizes the scdeuler for the thread. The method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible. 
 
 
