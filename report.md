@@ -443,8 +443,9 @@ lock holder preemption. Xen Summit North America
 	
 	The design points of the OSv thread scheduling model are based on the characteristics of the cloud environment. Preemptive multithreading ensures that the utilization of SMP machines in the cloud environment can be maximized. Lock-free and tick-less minimize the overhead of thread scheduling. At the same time, the method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible. 
 	The core technologies or novel techenologies in the OSv is that it gives up the spin-lock and sleeping mutex but ensure that CPU time is not wasted through non-blocking, lock-free algorithms, and sleeping mutexes which optizimized the efficiency for the whole system. The core technologies consist of the run-queue of each CPU, lock-free algorithm and work load balancer. Each CPU keeps a run-queue which lists all the runnable threads and use lock-free algorithm to implement mutex lock. Besides, to balance work-load, each CPU will have a load balancer thread. Below is the benchmark result for the OSv[1]:
-![Pic2](resources/Pic2.png?raw=true)
-    <center></center>
+	
+	![Pic2](resources/Pic2.png?raw=true)
+    	<center></center>
 
 - What are the security properties of the system? How does it adhere to the principles for secure system design? What is the reference monitor in the system, and how does it provide complete mediation, tamperproof-ness, and how does it argue trustworthiness?
 
