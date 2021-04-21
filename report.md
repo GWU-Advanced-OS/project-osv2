@@ -438,6 +438,14 @@ lock holder preemption. Xen Summit North America
 - In what conditions is the performance of the system "good" and in which is it "bad"? How does its performance compare to a Linux baseline (this discussion can be quantitative or qualitative)?
 
     The system should be in good performance when dealing with tasks that has frequent Linux system calls and heavy networking, because, first, it removes the heavy system calls in Linux and replaces them with direct function calls, thus applications that rely on this gain a lot; second, network stack in OSv is much more simplified as we have discussed above, so applications like microservices should gain performance. The benchmark using Memcached support this idea, as it shows that "OSv was able to handle about 20% more requests per second than the same memcached version on Linux". The system performs not good in applications with heavy disk I/O operations compared with Linux  because the coarse-grained locking in VFS could lock the vnode for a long time.
+    
+- What are the core technologies involved, and how are they composed?
+	
+	The design points of the OSv thread scheduling model are based on the characteristics of the cloud environment. Preemptive multithreading ensures that the utilization of SMP machines in the cloud environment can be maximized. Lock-free and tick-less minimize the overhead of thread scheduling. At the same time, the method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible.
+
+- What are the security properties of the system? How does it adhere to the principles for secure system design? What is the reference monitor in the system, and how does it provide complete mediation, tamperproof-ness, and how does it argue trustworthiness?
+
+- What optimizations exist in the system? What are the "key operations" that the system treats as a fast-path that deserve optimization? How does it go about optimizing them?
 
 # Contribution
 
