@@ -460,12 +460,16 @@ lock holder preemption. Xen Summit North America
 	In a real environment, hardware operations usually return in nanoseconds, while virtual hardware operations usually return in millimeters. In addition, due to the hypervisor's scheduling of VCPUs, the delay between instructions may be unpredictably large. In response to this, OSv avoids the use of spin locks, etc., and uses non-blocking, lock-free algorithms, and sleeping mutexes to ensure that CPU time is not wasted. At the same time, try to perform time-consuming operations in a virtualized environment.
 	
 	Besides, the OSv optimizes the scdeuler for the thread. The method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible. 
+	
+	In addition to all of those on top, since traditional Linux APIs is designed to be used in a dual mode and multi user environment, many overhead can be avoid once switched to single address space. For instance, OSv implemented a zero-copy version of socket API because now kernel and user space can share the same buffer. Similar optimization exists in Java GC part, by elaborating the fact that application have direct access to its page table. 
 
 
 # Contribution
 
 Memory & Thread : Shang Wu
 
-Filesystem :
+Filesystem : Bite Ye
 
 Network : Xinyu Han
+
+Optimaztion: Shangwu & Bite Ye
