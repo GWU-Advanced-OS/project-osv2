@@ -17,7 +17,18 @@
 # Question from project requirement  
 1. Summarize the project, what it is, what its goals are, and why it exists.
 
+   OSv is a unikernel aiming to provide a lightweight runtime VM enviroment for cloud VM applications, thus gaining performance and being very convenient to deploy applications quickly. It uses single address model, and only selects necessary libraries for an application to run, to compose the system image. Thus, one OSv image can only run one specific application, with multiple threads supported.
+ 
+   For example, you have a Web server application running in a cloud. At a moment, a huge number of requests come in, you have no choice but to deploy massive VM servers in order to consume those requests. OSv is helpful in this case compared with traditional Linux VM because it is very light and small, thus having a very quick boot time. Providers can quickly and massively depoly their new servers. Also, because there is only one applicaton in one OSv, the performance gains in this case. This means that the provider can use less money to provide basically the same service quality. 
+     
+
 2. What is the target domain of the system? Where is it valuable, and where is it not a good fit? These are all implemented in an engineering domain, thus are the product of trade-offs. No system solves all problems (despite the claims of marketing material).
+
+   The target domain of OSv is unikernel and virtual machine. It is valuable for those applications like microservices that only need a small & lightweight runtime environment, not only improving the performance for those applications but also providing the ability to massively deploy services in a short time. Also, as an unikernel, because OSv is within a VM, it doesn't need to bother with different hardware drivers, the code base could be relative small, thus having less potential bugs.  
+
+   The security of the system could also be guaranteed because each OSv instance is running under a VM, thus providing strong isolation.
+  
+   Disadvantages also exist in OSv. First, it is not easy to deploy complex systems within OSv because it only has a single address space and does not support multiple process. Thus, APIs like fork()/vfork()/exec() cannot be used. However, modern applications usually compose of different components, each of which is a single processes. Transplanting those kind of systems running in OSv is not easy. Second, because OSv is running in a VM, different components have to be put into different VMs/OSvs, thus communication between components is not flexible compared with Linux VM guest and probably causing poor performance for applications that heavily rely on IPC. 
 
 3. What are the "modules" of the system (see early lectures), and how do they relate? Where are isolation boundaries present? How do the modules communicate with each other? What performance implications does this structure have?
 
@@ -25,6 +36,8 @@
 In what conditions is the performance of the system "good" and in which is it "bad"? How does its performance compare to a Linux baseline (this discussion can be quantitative or qualitative)?
 
 5. What are the core technologies involved, and how are they composed?
+
+  The design points of the OSv thread scheduling model are based on the characteristics of the cloud environment. Preemptive multithreading ensures that the utilization of SMP machines in the cloud environment can be maximized. Lock-free and tick-less minimize the overhead of thread scheduling. At the same time, the method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible.
 
 6. What are the security properties of the system? How does it adhere to the principles for secure system design? What is the reference monitor in the system, and how does it provide complete mediation, tamperproof-ness, and how does it argue trustworthiness?
 

@@ -17,8 +17,7 @@ Disadvantages also exist in OSv. First, it is not easy to deploy complex systems
 
 ## Memory
 The memory management in the OSv follows the POSIX-like APIs which can map and
-unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single ap-
-plication and only has one single memory space, it does not support memory eviction.
+unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single application and only has one single memory space, it does not support memory eviction.
 However, it supports large memory allocation and can break the large page into smaller pages
 by using the mechanism similar to Linux’s Transparent Huge Pages[1]. In the Uniker-
 nel, the user and kernel share the same kernel space which means the user and kernel use
@@ -438,11 +437,42 @@ lock holder preemption. Xen Summit North America
 - In what conditions is the performance of the system "good" and in which is it "bad"? How does its performance compare to a Linux baseline (this discussion can be quantitative or qualitative)?
 
     The system should be in good performance when dealing with tasks that has frequent Linux system calls and heavy networking, because, first, it removes the heavy system calls in Linux and replaces them with direct function calls, thus applications that rely on this gain a lot; second, network stack in OSv is much more simplified as we have discussed above, so applications like microservices should gain performance. The benchmark using Memcached support this idea, as it shows that "OSv was able to handle about 20% more requests per second than the same memcached version on Linux". The system performs not good in applications with heavy disk I/O operations compared with Linux  because the coarse-grained locking in VFS could lock the vnode for a long time.
+    
+- What are the core technologies involved, and how are they composed?
+	
+	The design points of the OSv thread scheduling model are based on the characteristics of the cloud environment. Preemptive multithreading ensures that the utilization of SMP machines in the cloud environment can be maximized. Lock-free and tick-less minimize the overhead of thread scheduling.
+	
+	The core technologies or novel techenologies in the OSv is that it gives up the spin-lock but ensure that CPU time is not wasted through non-blocking, lock-free algorithms, and sleeping mutexes which optizimized the efficiency for the whole system. The core technologies consist of the run-queue of each CPU, lock-free algorithm and work load balancer. Each CPU keeps a run-queue which lists all the runnable threads and use lock-free algorithm to implement mutex lock. Besides, to balance work-load, each CPU will have a load balancer thread. Below is the benchmark result for the OSv[1]:
+	
+	![Pic2](resources/Pic2.png?raw=true)
+    	<center></center>
+
+- What are the security properties of the system? How does it adhere to the principles for secure system design? What is the reference monitor in the system, and how does it provide complete mediation, tamperproof-ness, and how does it argue trustworthiness?
+
+	OSv is a unikernel and it is designed to run as a “library” for application. Hence, the major part of securities are provided by the virtualization system running beneath. The major concept of how OSv enhance the security is, by letting each application having its own instance of a minimal operating system and running in separate virtualized guest domain, developers can utilize robust and mature virtualizing facilities to provides security. It decouples applications and put them under entirely different protection domain while maintaining a minimum overhead compare to other solution such as container.  In addition to this, some optimization is feasible because OSv design is single address space, we will cover that in later section. Along with the advantages, single address space design arises a few security issues to be solved, such as page access checking and preventing library being attacked. OSv implemented its own version of page guard to check memory access and using hardening features provide by musl to harden the code. In general, we think OSv adopts the principle of LCM (least common mechanism) in a very tumble and effective way: each application should have its own operating system, and because each one has its own, we only need to provide minimal feature and make them run in a single address space. Each application is coupled to its dedicate operating system, and each pair running in its own protection domain.
+
+- What optimizations exist in the system? What are the "key operations" that the system treats as a fast-path that deserve optimization? How does it go about optimizing them?
+
+	The OSv uses the single memory space which means user space and kernel space share the same space. Hence the switch context does not need to switch page table and flush TLB which optimizes the cost of the switch context. Here is the benchmark result for the context switch[1]:
+	
+	![Pic3](resources/Pic3.png?raw=true)
+    	<center></center>
+	
+	In a real environment, hardware operations usually return in nanoseconds, while virtual hardware operations usually return in millimeters. In addition, due to the hypervisor's scheduling of VCPUs, the delay between instructions may be unpredictably large. In response to this, OSv avoids the use of spin locks, etc., and uses non-blocking, lock-free algorithms, and sleeping mutexes to ensure that CPU time is not wasted. At the same time, try to perform time-consuming operations in a virtualized environment.
+	
+	Besides, the OSv optimizes the scheduler for the thread. The method based on exponential decay is used to calculate the thread scheduling time and schedule the running time to achieve the maximum fairness of thread scheduling as much as possible. 
+	
+	In addition to all of those on top, since traditional Linux APIs is designed to be used in a dual mode and multi user environment, many overhead can be avoid once switched to single address space. For instance, OSv implemented a zero-copy version of socket API because now kernel and user space can share the same buffer. Similar optimization exists in Java GC part, by elaborating the fact that application have direct access to its page table. 
+
 
 # Contribution
 
-Memory & Thread : 
+Memory & Thread : Shang Wu
 
-Filesystem :
+Filesystem : Bite Ye
 
 Network : Xinyu Han
+
+Optimaztion: Shangwu & Bite Ye
+
+General questions: Xinyu Han & Shangwu & Bite Ye
