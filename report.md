@@ -17,8 +17,7 @@ Disadvantages also exist in OSv. First, it is not easy to deploy complex systems
 
 ## Memory
 The memory management in the OSv follows the POSIX-like APIs which can map and
-unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single ap-
-plication and only has one single memory space, it does not support memory eviction.
+unmap memory by ’map’ and ’unmap’ API [1]. Since OSv aims to support a single application and only has one single memory space, it does not support memory eviction.
 However, it supports large memory allocation and can break the large page into smaller pages
 by using the mechanism similar to Linux’s Transparent Huge Pages[1]. In the Uniker-
 nel, the user and kernel share the same kernel space which means the user and kernel use
