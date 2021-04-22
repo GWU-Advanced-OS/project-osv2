@@ -412,8 +412,8 @@ lock holder preemption. Xen Summit North America
 
 ## Contribution
 
-Memory & Thread : 
+Memory & Thread : Shang Wu	
 
-Filesystem :
+Filesystem : Bite Ye
 
 Network : Xinyu Han
